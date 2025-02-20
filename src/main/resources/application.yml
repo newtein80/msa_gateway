@@ -1,0 +1,50 @@
+server:
+  port: 9000
+spring:
+  application:
+    name: gateway
+
+  # https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway/request-predicates-factories.html
+  cloud:
+    gateway:
+      default-filters:
+      - CustomGlobalFilter
+      routes:
+      # spring.application.name
+      - id: accounts
+        # uri: https://127.0.0.1:8801
+        uri: lb://accounts # lb(Load Balancing) 을 통해서 eureka 에 등록된 서비스로 라우팅
+        # gateway로 들어오는 path
+        predicates:
+        - Path=/mobigen/accounts/**
+        filters:
+        - RewritePath=/mobigen/accounts/(?<segment>.*), /${segment}
+        - AccountsServiceCustomFilter
+      - id: cards
+        # uri: https://127.0.0.1:8802
+        uri: lb://cards
+        predicates:
+        - Path=/mobigen/cards/**
+        filters:
+        - RewritePath=/mobigen/cards/(?<segment>.*), /${segment}
+        # - AddResponseHeader=X-Response-Time, #{T(java.time.LocalDateTime).now().toString()}
+      - id: loans
+        # uri: https://127.0.0.1:8803
+        uri: lb://loans
+        predicates:
+        - Path=/mobigen/loans/**
+        filters:
+        - RewritePath=/mobigen/loans/(?<segment>.*), /${segment}
+
+eureka:
+  instance:
+    instance-id: ${spring.cloud.client.ip-address}:${random.value}
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka # eureka 서버가 여러 대 일 경우에 "," 추가해주면 된다.
+
+logging:
+  config: classpath:log4j2.xml
