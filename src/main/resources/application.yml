@@ -7,6 +7,13 @@ spring:
   # https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway/request-predicates-factories.html
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: false
+          # lowerCaseServiceId: true
+      httpclient:
+        connect-timeout: 1000
+        response-timeout: 10s
       default-filters:
       - CustomGlobalFilter
       routes:
@@ -44,7 +51,53 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://127.0.0.1:8761/eureka # eureka 서버가 여러 대 일 경우에 "," 추가해주면 된다.
+      defaultZone: http://svc-eureka-app:8761/eureka # eureka 서버가 여러 대 일 경우에 "," 추가해주면 된다.
 
 logging:
   config: classpath:log4j2.xml
+
+# ==== spring actuator properties ====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  endpoint:
+    shutdown:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+resilience4j:
+ circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      permittedNumberOfCallsInHalfOpenState: 2
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10000
+  instances:
+    accountsCircuitBreaker:
+      registerHealthIndicator: true
+      slidingWindowSize: 100
+      permittedNumberOfCallsInHalfOpenState: 10
+      waitDurationInOpenState: 10s
+      failureRateThreshold: 50
+      slowCallRateThreshold: 100
+      slowCallDurationThreshold: 60s
+  timelimiter:
+    instances:
+      default:
+        timeoutDuration: 10s
