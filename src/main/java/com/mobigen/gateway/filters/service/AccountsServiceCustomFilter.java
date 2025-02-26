@@ -17,11 +17,11 @@ public class AccountsServiceCustomFilter extends AbstractGatewayFilterFactory<Ac
     public static class Config{}
 
     // 처리시간 측정을 위해 StopWatch 선언
-    private StopWatch stopWatch;
+    // private StopWatch stopWatch;
 
     public AccountsServiceCustomFilter() {
         super(Config.class);
-        stopWatch = new StopWatch("Account Filter");
+        // stopWatch = new StopWatch("Account Filter");
     }
 
     @SuppressWarnings("deprecation")
@@ -33,7 +33,7 @@ public class AccountsServiceCustomFilter extends AbstractGatewayFilterFactory<Ac
 
             // PRE
             StringBuilder preSb = new StringBuilder();
-            stopWatch.start();
+            // stopWatch.start();
             preSb.append("\n[Custom Filter] Request >> IP: " + request.getRemoteAddress().getAddress() + ", URI: " + request.getURI());
             request.getHeaders().forEach((key, value) -> {
                 preSb.append("\n\t[Request Header] " + key + ": " + value);
@@ -41,7 +41,7 @@ public class AccountsServiceCustomFilter extends AbstractGatewayFilterFactory<Ac
             // POST
 
             return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-                stopWatch.stop();
+                // stopWatch.stop();
                 preSb.append("\n---------------------------------------------------------------------------");
 
                 response.getHeaders().forEach((key, value) -> {
@@ -50,8 +50,7 @@ public class AccountsServiceCustomFilter extends AbstractGatewayFilterFactory<Ac
 
                 preSb.append("\n[Custom Filter] Response << IP: " + request.getRemoteAddress().getAddress() +
                 ", URI: " + request.getURI() +
-                ", Code: " + response.getStatusCode() +
-                "... Duration: " + stopWatch.getLastTaskTimeMillis() + " ms");
+                ", Code: " + response.getStatusCode());
 
                 log.info(preSb.toString());
                 preSb.setLength(0);
