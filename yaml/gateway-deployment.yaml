@@ -5,7 +5,7 @@ metadata:
   name: deploy-gateway-app
   namespace: group1-team2
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: d-group1-team2-gateway
