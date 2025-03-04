@@ -18,7 +18,8 @@ spring:
         jwt:
           # https://velog.io/@chane_ha_da/Start-Spring-Boot-Spring-Security-Oauth2-Client-Credentials
           # http://localhost:7080/realms/group1team2/.well-known/openid-configuration
-          jwk-set-uri: "http://svc-keycloak:8080/realms/group1team2/protocol/openid-connect/certs"
+          jwk-set-uri: "http://192.168.100.221:30202/realms/group1team2/protocol/openid-connect/certs"
+          # jwk-set-uri: "http://svc-keycloak:8080/realms/group1team2/protocol/openid-connect/certs"
   # https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway/request-predicates-factories.html
   cloud:
     gateway:
