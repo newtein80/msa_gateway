@@ -3,7 +3,22 @@ server:
 spring:
   application:
     name: gateway
-
+  profiles:
+    # active: native # target: file directory
+    active: git
+  data:
+    redis:
+      connect-timeout: 2s
+      host: localhost
+      port: 6379
+      timeout: 1s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # https://velog.io/@chane_ha_da/Start-Spring-Boot-Spring-Security-Oauth2-Client-Credentials
+          # http://localhost:7080/realms/group1team2/.well-known/openid-configuration
+          jwk-set-uri: "http://svc-keycloak:8080/realms/group1team2/protocol/openid-connect/certs"
   # https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway/request-predicates-factories.html
   cloud:
     gateway:
@@ -14,6 +29,9 @@ spring:
       httpclient:
         connect-timeout: 1000
         response-timeout: 10s
+      filter:
+        request-rate-limiter:
+          enabled: true
       default-filters:
       - CustomGlobalFilter
       routes:
@@ -27,14 +45,22 @@ spring:
         filters:
         - RewritePath=/mobigen/accounts/(?<segment>.*), /${segment}
         - AccountsServiceCustomFilter
-      - id: cards
-        # uri: https://127.0.0.1:8802
-        uri: lb://cards
-        predicates:
-        - Path=/mobigen/cards/**
-        filters:
-        - RewritePath=/mobigen/cards/(?<segment>.*), /${segment}
-        # - AddResponseHeader=X-Response-Time, #{T(java.time.LocalDateTime).now().toString()}
+        - CircuitBreaker=name=accountsCircuitBreaker,fallbackUri=forward:/contactSupport
+      # CustomRouteConfig.java 파일로 이동
+      # - id: cards
+      #   uri: lb://cards # uri: https://127.0.0.1:8802
+      #   predicates:
+      #   - Path=/mobigen/cards/**
+      #   filters:
+      #   - RewritePath=/mobigen/cards/(?<segment>.*), /${segment}
+      #   - AddResponseHeader=X-Response-Time, '#{T(java.time.LocalDateTime).now().toString()}'
+      #   - name: RequestRateLimiter
+      #     args:
+      #       key-resolver:
+      #         expression: "headers['user'] ?: 'anonymous'"
+      #       redis-rate-limiter.replenishRate: 1 # 초당 버킷에 추가되는 토큰 개수
+      #       redis-rate-limiter.burstCapacity: 1 # 버킷에 담을 수 있는 최대 토큰 개수
+      #       redis-rate-limiter.requestedTokens: 1 # API 요청 시 소비되는 토큰 개수
       - id: loans
         # uri: https://127.0.0.1:8803
         uri: lb://loans
@@ -42,6 +68,18 @@ spring:
         - Path=/mobigen/loans/**
         filters:
         - RewritePath=/mobigen/loans/(?<segment>.*), /${segment}
+        # - RequestRateLimiter=replenishRate=1,burstCapacity=1,requestedTokens=1
+        # - Retry=3,method=GET,backoff=100ms,1000ms,2,true
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY
+            methods: GET
+            backoff:
+              firstBackoff: 100ms
+              maxBackoff: 1000ms
+              factor: 2
+              basedOnPreviousValue: false
 
 eureka:
   instance:
@@ -55,6 +93,13 @@ eureka:
 
 logging:
   config: classpath:log4j2.xml
+  # level:
+  #   '[org.springframework.security]': DEBUG 
+  level:
+    '[org.springframework.security]': TRACE
+    '[org.springframework.security.web.server]': TRACE
+    '[org.springframework.security.web.server.SecurityWebFilterChain]': TRACE
+    '[org.springframework.security.web.server.authorization]': TRACE
 
 # ==== spring actuator properties ====
 management:
@@ -97,7 +142,19 @@ resilience4j:
       failureRateThreshold: 50
       slowCallRateThreshold: 100
       slowCallDurationThreshold: 60s
+      minimumNumberOfCalls: 10
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      maxWaitDurationInHalfOpenState: 10000
   timelimiter:
     instances:
       default:
         timeoutDuration: 10s
+
+
+# rate-limiter:
+#   redis:
+#     replenishRate: 1
+#     burstCapacity: 1
+#     requestedTokens: 1
+#   key-resolver:
+#     expression: "headers['user'] ?: 'anonymous'"

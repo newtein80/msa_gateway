@@ -1,0 +1,9 @@
+eureka:
+  instance:
+    instance-id: ${spring.cloud.client.ip-address}:${random.value}
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka # eureka 서버가 여러 대 일 경우에 "," 추가해주면 된다.
